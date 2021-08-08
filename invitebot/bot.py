@@ -6,7 +6,7 @@ from invitebot.database import query_invites_for_user
 from invitebot.utils import extract_status_change, get_sender_name
 
 from telegram import Update, User, Bot, Chat, ChatInviteLink, ParseMode, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater, CallbackContext, CommandHandler, ChatMemberHandler
+from telegram.ext import Updater, CallbackContext, CommandHandler, ChatMemberHandler, Filters
 from telegram.error import TelegramError
 from telegram.utils import helpers
 
@@ -24,11 +24,11 @@ class InviteBot:
         dispatcher = self.updater.dispatcher
 
         # Register commands
-        dispatcher.add_handler(CommandHandler("help", self.help_command, allow_edited=False))
-        dispatcher.add_handler(CommandHandler("start", self.start_command, allow_edited=False))
-        dispatcher.add_handler(CommandHandler("invite", self.invite_command, allow_edited=False))
-        dispatcher.add_handler(CommandHandler("my_invites", self.my_invites_command, allow_edited=False))
-        dispatcher.add_handler(CommandHandler("check_invite", self.check_invite_command, allow_edited=False))
+        dispatcher.add_handler(CommandHandler("help", self.help_command, filters=~Filters.update.edited_message))
+        dispatcher.add_handler(CommandHandler("start", self.start_command, filters=~Filters.update.edited_message))
+        dispatcher.add_handler(CommandHandler("invite", self.invite_command, filters=~Filters.update.edited_message))
+        dispatcher.add_handler(CommandHandler("my_invites", self.my_invites_command, filters=~Filters.update.edited_message))
+        dispatcher.add_handler(CommandHandler("check_invite", self.check_invite_command, filters=~Filters.update.edited_message))
 
         # Handle members joining/leaving chats.
         dispatcher.add_handler(ChatMemberHandler(self.new_chat_member, ChatMemberHandler.CHAT_MEMBER))
