@@ -33,6 +33,9 @@ class InviteBot:
         # Handle members joining/leaving chats.
         dispatcher.add_handler(ChatMemberHandler(self.new_chat_member, ChatMemberHandler.CHAT_MEMBER))
 
+        # Create all tables in the database
+        db.create_tables()
+
     def start(self):
         # Start the Bot
         # We pass 'allowed_updates' handle *all* updates including `chat_member` updates
