@@ -82,8 +82,8 @@ class InviteBot:
         db.session.commit()
 
         logger.info(
-            f"User '{get_sender_name(new_member.user)}' ({new_member.user.id}) joined the chat "
-            f"'{update.effective_chat.title}' ({update.effective_chat.id}) via {chat_invite.invite_link}"
+            f"User \"{get_sender_name(new_member.user)}\" ({new_member.user.id}) joined the chat "
+            f"\"{update.effective_chat.title}\" ({update.effective_chat.id}) via {chat_invite.invite_link}"
         )
 
         update.effective_chat.send_message(
@@ -161,8 +161,8 @@ class InviteBot:
         db.session.commit()
 
         logger.info(
-            f"User '{get_sender_name(update.effective_user)}' ({update.effective_user.id}) created a new invite link "
-            f"for chat '{update.effective_chat.title}' ({update.effective_chat.id})"
+            f"User \"{get_sender_name(update.effective_user)}\" ({update.effective_user.id}) created a new invite link "
+            f"for chat \"{chat.title}\" ({chat.id})"
         )
 
         update.effective_message.reply_text(
