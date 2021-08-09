@@ -6,7 +6,7 @@ from invitebot.database import query_invites_for_user
 from invitebot.utils import extract_status_change, get_sender_name
 
 from telegram import Update, User, Bot, Chat, ChatMember, ChatInviteLink, ParseMode, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater, CallbackContext, CommandHandler, ChatMemberHandler, Filters
+from telegram.ext import Updater, Dispatcher, CallbackContext, CommandHandler, ChatMemberHandler, Filters
 from telegram.error import TelegramError
 from telegram.utils import helpers
 
@@ -23,7 +23,7 @@ class InviteBot:
         self.updater = Updater(bot_token)
 
         # Get the dispatcher to register handlers
-        dispatcher = self.updater.dispatcher
+        dispatcher: Dispatcher = self.updater.dispatcher
 
         # Register commands
         dispatcher.add_handler(CommandHandler("help", self.help_command, filters=~Filters.update.edited_message))
@@ -34,11 +34,12 @@ class InviteBot:
 
         # Handle members joining/leaving chats.
         dispatcher.add_handler(ChatMemberHandler(self.new_chat_member, ChatMemberHandler.CHAT_MEMBER))
+        dispatcher.add_error_handler(self.error_handler)
 
         # Create all tables in the database
         db.create_tables()
 
-    def start(self):
+    def start(self) -> None:
         # Start the Bot
         # We pass 'allowed_updates' handle *all* updates including `chat_member` updates
         # To reset this, simply pass `allowed_updates=[]`
@@ -52,6 +53,9 @@ class InviteBot:
         # SIGTERM or SIGABRT. This should be used most of the time, since
         # start_polling() is non-blocking and will stop the bot gracefully.
         self.updater.idle()
+
+    def error_handler(self, update: object, context: CallbackContext) -> None:
+        logger.warning("Update \"%s\" caused error \"%s\"", update, context.error)
 
     def new_chat_member(self, update: Update, context: CallbackContext) -> None:
         result = extract_status_change(update.chat_member)
