@@ -30,7 +30,7 @@ class InviteBot:
         dispatcher.add_handler(CommandHandler("start", self.start_command, filters=~Filters.update.edited_message))
         dispatcher.add_handler(CommandHandler("invite", self.invite_command, filters=~Filters.update.edited_message))
         dispatcher.add_handler(CommandHandler("my_invites", self.my_invites_command, filters=~Filters.update.edited_message))
-        dispatcher.add_handler(CommandHandler("check_invite", self.check_invite_command, filters=~Filters.update.edited_message))
+        dispatcher.add_handler(CommandHandler("check_invite", self.check_invite_command, filters=~Filters.update.edited_message))  # noqa: E501
 
         # Handle members joining/leaving chats.
         dispatcher.add_handler(ChatMemberHandler(self.new_chat_member, ChatMemberHandler.CHAT_MEMBER))
@@ -127,7 +127,8 @@ class InviteBot:
             return
 
         # check if the limit has been exceeded for this chat
-        if query_invites_for_user(chat.id, update.effective_user.id).count() >= MAX_INVITES_PER_USER and update.effective_user.id != OWNER_ID:
+        invites_count = query_invites_for_user(chat.id, update.effective_user.id).count()
+        if invites_count >= MAX_INVITES_PER_USER and update.effective_user.id != OWNER_ID:
             update.effective_message.reply_text(
                 text=(
                     f"You've used your limit of *{MAX_INVITES_PER_USER} invite links*, "
@@ -186,8 +187,8 @@ class InviteBot:
         if update.effective_chat.type == Chat.PRIVATE:
             update.effective_message.reply_text(
                 text=(
-                    f"You cannot use this command here!\n\n"
-                    f"To get started, use /invite in a group chat."
+                    "You cannot use this command here!\n\n"
+                    "To get started, use /invite in a group chat."
                 ),
                 parse_mode=ParseMode.MARKDOWN
             )

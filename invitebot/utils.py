@@ -21,7 +21,7 @@ def extract_status_change(chat_member_update: ChatMemberUpdated) -> Optional[Tup
             ChatMember.CREATOR,
             ChatMember.ADMINISTRATOR,
         ]
-        or (old_status == ChatMember.RESTRICTED and old_is_member is True)
+        or (old_status == ChatMember.RESTRICTED and old_is_member is True)  # noqa: W503
     )
     is_member = (
         new_status
@@ -30,7 +30,7 @@ def extract_status_change(chat_member_update: ChatMemberUpdated) -> Optional[Tup
             ChatMember.CREATOR,
             ChatMember.ADMINISTRATOR,
         ]
-        or (new_status == ChatMember.RESTRICTED and new_is_member is True)
+        or (new_status == ChatMember.RESTRICTED and new_is_member is True)  # noqa: W503
     )
 
     return was_member, is_member
