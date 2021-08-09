@@ -10,6 +10,8 @@ from telegram.ext import Updater, CallbackContext, CommandHandler, ChatMemberHan
 from telegram.error import TelegramError
 from telegram.utils import helpers
 
+from sqlalchemy.exc import MultipleResultsFound, NoResultFound
+
 
 class InviteBot:
 
@@ -52,7 +54,42 @@ class InviteBot:
         self.updater.idle()
 
     def new_chat_member(self, update: Update, context: CallbackContext) -> None:
-        print("Kek")
+        result = extract_status_change(update.chat_member)
+        if result is None:
+            return
+
+        was_member, is_member = result
+        chat_invite = update.chat_member.invite_link
+
+        # check if member has joined the chat via invite link
+        if was_member or not is_member or not chat_invite:
+            return
+
+        new_member = update.chat_member.new_chat_member
+
+        try:
+            invite: db.Invite = db.session.query(db.Invite).filter(db.Invite.link == chat_invite.invite_link).one()
+        except MultipleResultsFound:
+            return
+        except NoResultFound:
+            return
+
+        invite.invitee_id = new_member.user.id
+        invite.invitee_name = new_member.user.full_name
+        invite.joined_at = update.chat_member.date
+
+        db.session.merge(invite)
+        db.session.commit()
+
+        logger.info(f"User '{get_sender_name(new_member.user)}' ({new_member.user.id}) joined the chat '{update.effective_chat.title}' ({update.effective_chat.id}) via {chat_invite.invite_link}")
+
+        update.effective_chat.send_message(
+            text=(
+                f"{new_member.user.mention_markdown()} joined the group via invite link from "
+                f"{helpers.mention_markdown(invite.from_id, invite.from_name)}. Be respectful and enjoy your stay!"
+            ),
+            parse_mode=ParseMode.MARKDOWN
+        )
 
     def help_command(self, update: Update, context: CallbackContext) -> None:
         pass
@@ -114,7 +151,7 @@ class InviteBot:
         db.session.add(invite)
         db.session.commit()
 
-        logger.info(f"User {get_sender_name(update.effective_user)} ({update.effective_user.id}) created a new invite link for chat ID {chat_id}")
+        logger.info(f"User '{get_sender_name(update.effective_user)}' ({update.effective_user.id}) created a new invite link for chat ID {chat_id}")
 
         update.effective_message.reply_text(
             text=(
