@@ -5,7 +5,7 @@ from invitebot import logger, database as db, OWNER_ID, MAX_INVITES_PER_USER, EX
 from invitebot.database import query_invites_for_user
 from invitebot.utils import extract_status_change, get_sender_name
 
-from telegram import Update, User, Bot, Chat, ChatInviteLink, ParseMode, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, User, Bot, Chat, ChatMember, ChatInviteLink, ParseMode, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, CallbackContext, CommandHandler, ChatMemberHandler, Filters
 from telegram.error import TelegramError
 from telegram.utils import helpers
@@ -81,7 +81,10 @@ class InviteBot:
         db.session.merge(invite)
         db.session.commit()
 
-        logger.info(f"User '{get_sender_name(new_member.user)}' ({new_member.user.id}) joined the chat '{update.effective_chat.title}' ({update.effective_chat.id}) via {chat_invite.invite_link}")
+        logger.info(
+            f"User '{get_sender_name(new_member.user)}' ({new_member.user.id}) joined the chat "
+            f"'{update.effective_chat.title}' ({update.effective_chat.id}) via {chat_invite.invite_link}"
+        )
 
         update.effective_chat.send_message(
             text=(
@@ -109,13 +112,22 @@ class InviteBot:
         bot: Bot = self.updater.bot  # fix missing typing
 
         try:
-            chat_id = int(context.args[0])
+            chat: Chat = bot.get_chat(int(context.args[0]))
+        except TelegramError as e:
+            update.effective_message.reply_text(text=f"*{e.message}!*", parse_mode=ParseMode.MARKDOWN)
+            return
         except ValueError:
             update.effective_message.reply_text("What am I supposed to do with this?!")
             return
 
+        # check if user is member of the chat
+        chat_member: ChatMember = chat.get_member(update.effective_user.id)
+        if chat_member.status not in [ChatMember.MEMBER, ChatMember.CREATOR, ChatMember.ADMINISTRATOR]:
+            update.effective_message.reply_text("You are not a member of this group!")
+            return
+
         # check if the limit has been exceeded for this chat
-        if query_invites_for_user(chat_id, update.effective_user.id).count() >= MAX_INVITES_PER_USER and update.effective_user.id != OWNER_ID:
+        if query_invites_for_user(chat.id, update.effective_user.id).count() >= MAX_INVITES_PER_USER and update.effective_user.id != OWNER_ID:
             update.effective_message.reply_text(
                 text=(
                     f"You've used your limit of *{MAX_INVITES_PER_USER} invite links*, "
@@ -129,18 +141,14 @@ class InviteBot:
         expire_date = create_date + timedelta(hours=EXPIRY_HOURS)
 
         try:
-            chat_invite: ChatInviteLink = bot.create_chat_invite_link(
-                chat_id=chat_id,
-                expire_date=expire_date,
-                member_limit=1
-            )
+            chat_invite: ChatInviteLink = chat.create_invite_link(expire_date=expire_date, member_limit=1)
         except TelegramError as e:
             update.effective_message.reply_text(text=f"*{e.message}!*", parse_mode=ParseMode.MARKDOWN)
             return
 
         # add new entry to database
         invite = db.Invite(
-            chat_id=chat_id,
+            chat_id=chat.id,
             link=chat_invite.invite_link,
             from_id=update.effective_user.id,
             from_name=update.effective_user.full_name,
@@ -151,14 +159,18 @@ class InviteBot:
         db.session.add(invite)
         db.session.commit()
 
-        logger.info(f"User '{get_sender_name(update.effective_user)}' ({update.effective_user.id}) created a new invite link for chat ID {chat_id}")
+        logger.info(
+            f"User '{get_sender_name(update.effective_user)}' ({update.effective_user.id}) created a new invite link "
+            f"for chat '{update.effective_chat.title}' ({update.effective_chat.id})"
+        )
 
         update.effective_message.reply_text(
             text=(
                 f"A new invite link has been created!\n\n"
                 f"{helpers.escape_markdown(chat_invite.invite_link)}\n\n"
-                f"This link is valid for *{EXPIRY_HOURS} hours* until *{invite.expire_date:%Y-%m-%d %H:%M:%S} UTC* and limited to single use. "
-                f"Remember, you can only have *{MAX_INVITES_PER_USER} unused* invite links at a time!"
+                f"This link is valid for *{EXPIRY_HOURS} hours* until *{chat_invite.expire_date:%Y-%m-%d %H:%M:%S} GMT* "
+                f"and limited to single use. Remember, you can only have *{MAX_INVITES_PER_USER} unused* "
+                f"invite links at a time!"
             ),
             parse_mode=ParseMode.MARKDOWN,
             reply_markup=InlineKeyboardMarkup.from_button(
