@@ -4,10 +4,10 @@ services:
     build: .
     restart: always
     environment:
+      TZ: ${TZ}
       BOT_TOKEN: ${BOT_TOKEN}
-      OWNER_ID: 101110325
+      OWNER_ID: ${OWNER_ID}
       MAX_INVITES_PER_USER: ${MAX_INVITES_PER_USER}
       EXPIRY_HOURS: ${EXPIRY_HOURS}
-      DATABASE_URL: "sqlite:///invitebot.sqlite3"
     volumes:
       - ./invitebot.sqlite3:/app/invitebot.sqlite3:ro
