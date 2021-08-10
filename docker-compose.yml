@@ -1,0 +1,13 @@
+version: "3.3"
+services:
+  bot:
+    build: .
+    restart: always
+    environment:
+      BOT_TOKEN: ${BOT_TOKEN}
+      OWNER_ID: 101110325
+      MAX_INVITES_PER_USER: ${MAX_INVITES_PER_USER}
+      EXPIRY_HOURS: ${EXPIRY_HOURS}
+      DATABASE_URL: "sqlite:///invitebot.sqlite3"
+    volumes:
+      - ./invitebot.sqlite3:/app/invitebot.sqlite3:ro
