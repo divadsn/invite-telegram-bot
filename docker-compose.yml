@@ -10,4 +10,4 @@ services:
       MAX_INVITES_PER_USER: ${MAX_INVITES_PER_USER}
       EXPIRY_HOURS: ${EXPIRY_HOURS}
     volumes:
-      - ./invitebot.sqlite3:/app/invitebot.sqlite3:ro
+      - ./invitebot.sqlite3:/app/invitebot.sqlite3
