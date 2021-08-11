@@ -106,7 +106,8 @@ class InviteBot:
         if not context.args or update.effective_chat.type != Chat.PRIVATE:
             update.effective_message.reply_text(
                 text=(
-                    f"Hey, I'm *{self.me.full_name}*, yet another Telegram bot for managing group invite links.\n\n"
+                    f"Hey, I'm *{helpers.escape_markdown(self.me.full_name)}*, "
+                    f"yet another Telegram bot for managing group invite links.\n\n"
                     f"To get started, use /invite in a group chat."
                 ),
                 parse_mode=ParseMode.MARKDOWN
